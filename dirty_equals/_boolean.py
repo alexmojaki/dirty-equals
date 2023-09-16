@@ -1,7 +1,6 @@
 from typing import Any
 
 from ._base import DirtyEquals
-from ._utils import Omit
 
 
 class IsTrueLike(DirtyEquals[bool]):
@@ -61,7 +60,7 @@ class IsFalseLike(DirtyEquals[bool]):
         ```
         """
         self.allow_strings = allow_strings
-        super().__init__(allow_strings=allow_strings or Omit)
+        super().__init__(allow_strings=allow_strings)
 
     def equals(self, other: Any) -> bool:
         if isinstance(other, str) and self.allow_strings:

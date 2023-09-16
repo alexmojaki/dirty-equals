@@ -1,3 +1,4 @@
+import inspect
 from abc import ABCMeta
 from pprint import PrettyPrinter
 from typing import TYPE_CHECKING, Any, Dict, Generic, Iterable, Optional, Tuple, TypeVar
@@ -17,6 +18,18 @@ __all__ = 'DirtyEqualsMeta', 'DirtyEquals', 'AnyThing', 'IsOneOf'
 
 
 class DirtyEqualsMeta(ABCMeta):
+    _defaults: Dict[str, Any] = {}
+
+    def __init__(cls, name: str, bases: Tuple[type, ...], namespace: Dict[str, Any]):
+        super().__init__(name, bases, namespace)
+        defaults = {}
+        for base in bases:
+            if isinstance(base, DirtyEqualsMeta):
+                defaults.update(base._defaults)
+        if '__init__' in namespace:
+            defaults.update({k: p.default for k, p in inspect.signature(namespace['__init__']).parameters.items()})
+        cls._defaults = defaults
+
     def __eq__(self, other: Any) -> bool:
         # this is required as fancy things happen when creating generics which include equals checks, without it,
         # we get some recursive errors
@@ -55,6 +68,7 @@ class DirtyEquals(Generic[T], metaclass=DirtyEqualsMeta):
     """
 
     __slots__ = '_other', '_was_equal', '_repr_args', '_repr_kwargs'
+    _defaults: Dict[str, Any] = {}
 
     def __init__(self, *repr_args: Any, **repr_kwargs: Any):
         """
@@ -126,8 +140,12 @@ class DirtyEquals(Generic[T], metaclass=DirtyEqualsMeta):
         return DirtyNot(self)
 
     def _repr_ne(self) -> str:
-        args = [repr(arg) for arg in self._repr_args if arg is not Omit]
-        args += [f'{k}={v!r}' for k, v in self._repr_kwargs.items() if v is not Omit]
+        args = [repr(arg) for arg in self._repr_args]
+        args += [
+            f'{k}={v!r}'
+            for k, v in self._repr_kwargs.items()
+            if v is not Omit and (k not in self._defaults or v != self._defaults[k])
+        ]
         return f'{self.__class__.__name__}({", ".join(args)})'
 
     def __repr__(self) -> str:

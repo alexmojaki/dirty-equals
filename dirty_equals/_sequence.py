@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any, Container, Dict, List, Optional, Sized, Tuple, Type, TypeVar, Union, overload
 
 from ._base import DirtyEquals
-from ._utils import Omit, plain_repr
+from ._utils import plain_repr
 
 if TYPE_CHECKING:
     from typing import TypeAlias
@@ -177,9 +177,9 @@ class IsListOrTuple(DirtyEquals[T]):
 
         super().__init__(
             *items,
-            positions=Omit if positions is None else positions,
+            positions=positions,
             length=_length_repr(self.length),
-            check_order=self.check_order and Omit,
+            check_order=check_order,
         )
 
     def equals(self, other: Any) -> bool:
@@ -256,7 +256,7 @@ class IsTuple(IsListOrTuple[Tuple[Any, ...]]):
 
 def _length_repr(length: 'LengthType') -> Any:
     if length is None:
-        return Omit
+        return None
     elif isinstance(length, int):
         return length
     else:

@@ -21,8 +21,6 @@ __all__ = (
     'IsNegativeFloat',
 )
 
-from ._utils import Omit
-
 AnyNumber = Union[int, float, Decimal]
 N = TypeVar('N', int, float, Decimal, date, datetime, AnyNumber)
 
@@ -92,16 +90,15 @@ class IsNumeric(DirtyEquals[N]):
         self.ge: Optional[N] = ge
         self.le: Optional[N] = le
         self.has_bounds_checks = not all(f is None for f in (exactly, approx, delta, gt, lt, ge, le))
-        kwargs = {
-            'exactly': Omit if exactly is None else exactly,
-            'approx': Omit if approx is None else approx,
-            'delta': Omit if delta is None else delta,
-            'gt': Omit if gt is None else gt,
-            'lt': Omit if lt is None else lt,
-            'ge': Omit if ge is None else ge,
-            'le': Omit if le is None else le,
-        }
-        super().__init__(**kwargs)
+        super().__init__(
+            exactly=exactly,
+            approx=approx,
+            delta=delta,
+            gt=gt,
+            lt=lt,
+            ge=ge,
+            le=le,
+        )
 
     def prepare(self, other: Any) -> N:
         if other is True or other is False:

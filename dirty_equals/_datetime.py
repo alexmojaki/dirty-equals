@@ -2,7 +2,6 @@ from datetime import date, datetime, timedelta, timezone, tzinfo
 from typing import Any, Optional, Union
 
 from ._numeric import IsNumeric
-from ._utils import Omit
 
 
 class IsDatetime(IsNumeric[datetime]):
@@ -74,10 +73,10 @@ class IsDatetime(IsNumeric[datetime]):
         self.format_string = format_string
         self.enforce_tz = enforce_tz
         self._repr_kwargs.update(
-            unix_number=Omit if unix_number is False else unix_number,
-            iso_string=Omit if iso_string is False else iso_string,
-            format_string=Omit if format_string is None else format_string,
-            enforce_tz=Omit if enforce_tz is True else format_string,
+            unix_number=unix_number,
+            iso_string=iso_string,
+            format_string=format_string,
+            enforce_tz=enforce_tz,
         )
 
     def prepare(self, other: Any) -> datetime:
@@ -251,8 +250,8 @@ class IsDate(IsNumeric[date]):
         self.iso_string = iso_string
         self.format_string = format_string
         self._repr_kwargs.update(
-            iso_string=Omit if iso_string is False else iso_string,
-            format_string=Omit if format_string is None else format_string,
+            iso_string=iso_string,
+            format_string=format_string,
         )
 
     def prepare(self, other: Any) -> date:

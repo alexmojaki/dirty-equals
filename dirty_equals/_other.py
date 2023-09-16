@@ -10,7 +10,7 @@ from uuid import UUID
 
 from ._base import DirtyEquals
 from ._dict import IsDict
-from ._utils import Omit, plain_repr
+from ._utils import plain_repr
 
 try:
     from typing import Literal
@@ -363,7 +363,7 @@ class IsIP(DirtyEquals[IP]):
         if netmask and not self.version:
             raise TypeError('To check the netmask you must specify the IP version')
         self.netmask = netmask
-        super().__init__(version=version or Omit, netmask=netmask or Omit)
+        super().__init__(version=version, netmask=netmask)
 
     def equals(self, other: Any) -> bool:
         if isinstance(other, (IPv4Network, IPv6Network)):

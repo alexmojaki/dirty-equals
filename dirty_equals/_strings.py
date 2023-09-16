@@ -2,7 +2,7 @@ import re
 from typing import Any, Optional, Pattern, Tuple, Type, TypeVar, Union
 
 from ._base import DirtyEquals
-from ._utils import Omit, plain_repr
+from ._utils import plain_repr
 
 try:
     from typing import Literal
@@ -72,11 +72,11 @@ class IsAnyStr(DirtyEquals[T]):
         else:
             self.regex, self.regex_flags = self._prepare_regex(regex, regex_flags)
         super().__init__(
-            min_length=Omit if min_length is None else min_length,
-            max_length=Omit if max_length is None else max_length,
-            case=case or Omit,
-            regex=regex or Omit,
-            regex_flags=Omit if regex_flags == 0 else plain_repr(repr(re.RegexFlag(regex_flags))),
+            min_length=min_length,
+            max_length=max_length,
+            case=case,
+            regex=regex,
+            regex_flags=0 if regex_flags == 0 else plain_repr(repr(re.RegexFlag(regex_flags))),
         )
 
     def equals(self, other: Any) -> bool:
