@@ -91,9 +91,6 @@ class HasName(DirtyEquals[T]):
         """
         self.expected_name = expected_name
         self.allow_instances = allow_instances
-        kwargs = {}
-        if allow_instances:
-            kwargs['allow_instances'] = allow_instances
         super().__init__(expected_name, allow_instances=allow_instances)
 
     def __class_getitem__(cls, expected_name: str) -> 'HasName[T]':
