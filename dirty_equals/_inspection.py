@@ -45,7 +45,7 @@ class IsInstance(DirtyEquals[ExpectedType]):
         """
         self.expected_type = expected_type
         self.only_direct_instance = only_direct_instance
-        super().__init__(expected_type)
+        super().__init__(expected_type, only_direct_instance=only_direct_instance)
 
     def __class_getitem__(cls, expected_type: ExpectedType) -> 'IsInstance[ExpectedType]':
         return cls(expected_type)
