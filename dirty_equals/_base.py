@@ -1,9 +1,7 @@
 import inspect
 from abc import ABCMeta
-from inspect import Parameter
 from pprint import PrettyPrinter
-from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Dict, Generic, Optional, Sequence, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Generic, Mapping, Optional, Sequence, Tuple, TypeVar
 
 try:
     from typing import Protocol
@@ -124,7 +122,7 @@ class DirtyEquals(Generic[T], metaclass=DirtyEqualsMeta):
     def _repr_args_kwargs(self) -> ArgsAndKwargs:
         args = []
         kwargs = {}
-        for name, param in self._signature_params().items():
+        for name, param in self._init_params().items():
             if not hasattr(self, name):
                 continue
             value = getattr(self, name)
@@ -144,13 +142,13 @@ class DirtyEquals(Generic[T], metaclass=DirtyEqualsMeta):
         return args, kwargs
 
     def _repr_ne(self) -> str:
-        params = self._signature_params()
+        params = self._init_params()
         args, kwargs = self._repr_args_kwargs()
         args_reprs = [repr(a) for a in args]
         args_reprs += [f'{k}={v!r}' for k, v in kwargs.items() if not (k in params and params[k].default == v)]
         return f'{self.__class__.__name__}({", ".join(args_reprs)})'
 
-    def _signature_params(self) -> MappingProxyType[str, Parameter]:
+    def _init_params(self) -> Mapping[str, inspect.Parameter]:
         sig = inspect.signature(self.__init__)  # type: ignore[misc]
         return sig.parameters
 
