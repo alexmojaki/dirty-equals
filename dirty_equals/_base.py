@@ -1,7 +1,9 @@
 import inspect
 from abc import ABCMeta
+from inspect import Parameter
 from pprint import PrettyPrinter
-from typing import TYPE_CHECKING, Any, Dict, Generic, Iterable, Optional, Tuple, TypeVar
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Dict, Generic, Optional, Sequence, Tuple, TypeVar
 
 try:
     from typing import Protocol
@@ -9,27 +11,15 @@ except ImportError:
     # Python 3.7 doesn't have Protocol
     Protocol = object  # type: ignore[assignment]
 
-from ._utils import Omit
-
 if TYPE_CHECKING:
     from typing import TypeAlias, Union  # noqa: F401
 
 __all__ = 'DirtyEqualsMeta', 'DirtyEquals', 'AnyThing', 'IsOneOf'
 
+ArgsAndKwargs = Tuple[Sequence[Any], Dict[str, Any]]
+
 
 class DirtyEqualsMeta(ABCMeta):
-    _defaults: Dict[str, Any] = {}
-
-    def __init__(cls, name: str, bases: Tuple[type, ...], namespace: Dict[str, Any]):
-        super().__init__(name, bases, namespace)
-        defaults = {}
-        for base in bases:
-            if isinstance(base, DirtyEqualsMeta):
-                defaults.update(base._defaults)
-        if '__init__' in namespace:
-            defaults.update({k: p.default for k, p in inspect.signature(namespace['__init__']).parameters.items()})
-        cls._defaults = defaults
-
     def __eq__(self, other: Any) -> bool:
         # this is required as fancy things happen when creating generics which include equals checks, without it,
         # we get some recursive errors
@@ -67,19 +57,11 @@ class DirtyEquals(Generic[T], metaclass=DirtyEqualsMeta):
     Base type for all *dirty-equals* types.
     """
 
-    __slots__ = '_other', '_was_equal', '_repr_args', '_repr_kwargs'
-    _defaults: Dict[str, Any] = {}
+    __slots__ = '_other', '_was_equal'
 
-    def __init__(self, *repr_args: Any, **repr_kwargs: Any):
-        """
-        Args:
-            *repr_args: unnamed args to be used in `__repr__`
-            **repr_kwargs: named args to be used in `__repr__`
-        """
+    def __init__(self) -> None:
         self._other: Any = None
         self._was_equal: Optional[bool] = None
-        self._repr_args: Iterable[Any] = repr_args
-        self._repr_kwargs: Dict[str, Any] = repr_kwargs
 
     def equals(self, other: Any) -> bool:
         """
@@ -139,14 +121,38 @@ class DirtyEquals(Generic[T], metaclass=DirtyEqualsMeta):
     def __invert__(self) -> 'DirtyNot':
         return DirtyNot(self)
 
+    def _repr_args_kwargs(self) -> ArgsAndKwargs:
+        args = []
+        kwargs = {}
+        for name, param in self._signature_params().items():
+            if not hasattr(self, name):
+                continue
+            value = getattr(self, name)
+            if param.kind == param.POSITIONAL_ONLY:
+                args.append(value)
+            elif param.kind == param.POSITIONAL_OR_KEYWORD:
+                if param.default is param.empty:
+                    args.append(value)
+                else:
+                    kwargs[name] = value
+            elif param.kind == param.KEYWORD_ONLY:
+                kwargs[name] = value
+            elif param.kind == param.VAR_POSITIONAL:
+                args.extend(value)
+            elif param.kind == param.VAR_KEYWORD:
+                kwargs.update(value)
+        return args, kwargs
+
     def _repr_ne(self) -> str:
-        args = [repr(arg) for arg in self._repr_args]
-        args += [
-            f'{k}={v!r}'
-            for k, v in self._repr_kwargs.items()
-            if v is not Omit and (k not in self._defaults or v != self._defaults[k])
-        ]
-        return f'{self.__class__.__name__}({", ".join(args)})'
+        params = self._signature_params()
+        args, kwargs = self._repr_args_kwargs()
+        args_reprs = [repr(a) for a in args]
+        args_reprs += [f'{k}={v!r}' for k, v in kwargs.items() if not (k in params and params[k].default == v)]
+        return f'{self.__class__.__name__}({", ".join(args_reprs)})'
+
+    def _signature_params(self) -> MappingProxyType[str, Parameter]:
+        sig = inspect.signature(self.__init__)  # type: ignore[misc]
+        return sig.parameters
 
     def __repr__(self) -> str:
         if self._was_equal:
@@ -252,7 +258,7 @@ class IsOneOf(DirtyEquals[Any]):
     Can be useful with boolean operators.
     """
 
-    def __init__(self, expected_value: Any, *more_expected_values: Any):
+    def __init__(self, expected_value: Any, *more_expected_values: Any) -> None:
         """
         Args:
             expected_value: Expected value for equals to return true.
@@ -269,7 +275,10 @@ class IsOneOf(DirtyEquals[Any]):
         ```
         """
         self.expected_values: Tuple[Any, ...] = (expected_value,) + more_expected_values
-        super().__init__(*self.expected_values)
+        super().__init__()
+
+    def _repr_args_kwargs(self) -> ArgsAndKwargs:
+        return self.expected_values, {}
 
     def equals(self, other: Any) -> bool:
         return any(other == e for e in self.expected_values)

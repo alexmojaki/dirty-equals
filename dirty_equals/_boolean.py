@@ -60,7 +60,7 @@ class IsFalseLike(DirtyEquals[bool]):
         ```
         """
         self.allow_strings = allow_strings
-        super().__init__(allow_strings=allow_strings)
+        super().__init__()
 
     def equals(self, other: Any) -> bool:
         if isinstance(other, str) and self.allow_strings:

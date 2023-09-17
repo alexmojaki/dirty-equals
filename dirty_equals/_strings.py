@@ -1,7 +1,7 @@
 import re
 from typing import Any, Optional, Pattern, Tuple, Type, TypeVar, Union
 
-from ._base import DirtyEquals
+from ._base import ArgsAndKwargs, DirtyEquals
 from ._utils import plain_repr
 
 try:
@@ -71,13 +71,13 @@ class IsAnyStr(DirtyEquals[T]):
             self.regex_flags: int = 0
         else:
             self.regex, self.regex_flags = self._prepare_regex(regex, regex_flags)
-        super().__init__(
-            min_length=min_length,
-            max_length=max_length,
-            case=case,
-            regex=regex,
-            regex_flags=0 if regex_flags == 0 else plain_repr(repr(re.RegexFlag(regex_flags))),
-        )
+        super().__init__()
+
+    def _repr_args_kwargs(self) -> ArgsAndKwargs:
+        return (), {
+            **super()._repr_args_kwargs()[1],
+            'regex_flags': 0 if self.regex_flags == 0 else plain_repr(repr(re.RegexFlag(self.regex_flags))),
+        }
 
     def equals(self, other: Any) -> bool:
         if type(other) not in self.expected_types:

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Container, Dict, List, Optional, Sized, Tuple, Type, TypeVar, Union, overload
 
-from ._base import DirtyEquals
+from ._base import ArgsAndKwargs, DirtyEquals
 from ._utils import plain_repr
 
 if TYPE_CHECKING:
@@ -44,12 +44,17 @@ class HasLen(DirtyEquals[Sized]):
         3. Length must be between 3 and 5 inclusive.
         4. Length is required but can take any value.
         """
+        super().__init__()
         if max_length is None:
             self.length: 'LengthType' = min_length
-            super().__init__(self.length)
         else:
             self.length = (min_length, max_length)
-            super().__init__(*_length_repr(self.length))
+
+    def _repr_args_kwargs(self) -> ArgsAndKwargs:
+        if isinstance(self.length, int):
+            return [self.length], {}
+        else:
+            return _length_repr(self.length), {}
 
     def equals(self, other: Any) -> bool:
         return _length_correct(self.length, other)
@@ -78,7 +83,10 @@ class Contains(DirtyEquals[Container[Any]]):
         ```
         """
         self.contained_values: Tuple[Any, ...] = (contained_value,) + more_contained_values
-        super().__init__(*self.contained_values)
+        super().__init__()
+
+    def _repr_args_kwargs(self) -> ArgsAndKwargs:
+        return self.contained_values, {}
 
     def equals(self, other: Any) -> bool:
         return all(v in other for v in self.contained_values)
@@ -174,13 +182,14 @@ class IsListOrTuple(DirtyEquals[T]):
                 self.length = 0, ...
             else:
                 self.length = tuple(self.length)
+                _length_repr(self.length)
 
-        super().__init__(
-            *items,
-            positions=positions,
-            length=_length_repr(self.length),
-            check_order=check_order,
-        )
+        super().__init__()
+
+    def _repr_args_kwargs(self) -> ArgsAndKwargs:
+        args, kwargs = super()._repr_args_kwargs()
+        kwargs['length'] = _length_repr(self.length)
+        return args, kwargs
 
     def equals(self, other: Any) -> bool:
         if not isinstance(other, self.allowed_type):

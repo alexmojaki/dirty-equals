@@ -79,7 +79,7 @@ def test_is_uuid_false_repr():
     is_uuid = IsUUID()
     with pytest.raises(AssertionError):
         assert '123' == is_uuid
-    assert str(is_uuid) == 'IsUUID(*)'
+    assert str(is_uuid) == 'IsUUID()'
 
 
 def test_is_uuid4_false_repr():

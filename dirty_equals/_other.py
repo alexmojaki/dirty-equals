@@ -8,7 +8,7 @@ from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network, ip_net
 from typing import Any, Callable, TypeVar, Union, overload
 from uuid import UUID
 
-from ._base import DirtyEquals
+from ._base import ArgsAndKwargs, DirtyEquals
 from ._dict import IsDict
 from ._utils import plain_repr
 
@@ -41,7 +41,10 @@ class IsUUID(DirtyEquals[UUID]):
         ```
         """
         self.version = version
-        super().__init__(version or plain_repr('*'))
+        super().__init__()
+
+    def _repr_args_kwargs(self) -> ArgsAndKwargs:
+        return [self.version or plain_repr('')], {}
 
     def equals(self, other: Any) -> bool:
         if isinstance(other, UUID):
@@ -112,7 +115,15 @@ class IsJson(DirtyEquals[JsonType]):
             self.expected_value: Any = expected_kwargs
         else:
             self.expected_value = expected_value
-        super().__init__(plain_repr('*') if expected_value is AnyJson else expected_value)
+        super().__init__()
+
+    def _repr_args_kwargs(self) -> ArgsAndKwargs:
+        if self.expected_value is AnyJson:
+            return [plain_repr('*')], {}
+        elif isinstance(self.expected_value, dict):
+            return [], self.expected_value
+        else:
+            return [self.expected_value], {}
 
     def __class_getitem__(cls, expected_type: JsonType) -> IsJson[JsonType]:
         return cls(expected_type)
@@ -149,7 +160,10 @@ class FunctionCheck(DirtyEquals[Any]):
         ```
         """
         self.func = func
-        super().__init__(plain_repr(func.__name__))
+        super().__init__()
+
+    def _repr_args_kwargs(self) -> ArgsAndKwargs:
+        return [plain_repr(self.func.__name__)], {}
 
     def equals(self, other: Any) -> bool:
         return self.func(other)
@@ -257,7 +271,10 @@ class IsUrl(DirtyEquals[str]):
         else:
             url_type = max(url_type_mappings, key=url_type_mappings.get)  # type: ignore[arg-type]
         self.url_type = url_type
-        super().__init__(url_type)
+        super().__init__()
+
+    def _repr_args_kwargs(self) -> ArgsAndKwargs:
+        return [self.url_type], {}
 
     def equals(self, other: Any) -> bool:
         try:
@@ -311,7 +328,7 @@ class IsHash(DirtyEquals[str]):
             raise ValueError(f"Hash type must be one of the following values: {', '.join(allowed_hashes)}")
 
         self.hash_type = hash_type
-        super().__init__(hash_type)
+        super().__init__()
 
     def equals(self, other: Any) -> bool:
         if isinstance(other, str):
@@ -363,7 +380,7 @@ class IsIP(DirtyEquals[IP]):
         if netmask and not self.version:
             raise TypeError('To check the netmask you must specify the IP version')
         self.netmask = netmask
-        super().__init__(version=version, netmask=netmask)
+        super().__init__()
 
     def equals(self, other: Any) -> bool:
         if isinstance(other, (IPv4Network, IPv6Network)):
@@ -452,14 +469,15 @@ class IsDataclass(DirtyEquals[Any]):
         self.strict = False
         self.partial = False
         self._post_init()
-        super().__init__(**fields)
+        self.fields = fields
+        super().__init__()
 
     def _post_init(self) -> None:
         pass
 
     def equals(self, other: Any) -> bool:
         if is_dataclass(other) and not isinstance(other, type):
-            if self._repr_kwargs:
+            if self.fields:
                 return self._fields_check(other)
             else:
                 return True
@@ -473,7 +491,7 @@ class IsDataclass(DirtyEquals[Any]):
         partial: bool | None = None,
     ) -> IsDataclass:
         """Allows to customise the behaviour of `IsDataclass`, technically a new `IsDataclass` to allow chaining."""
-        new_cls = self.__class__(**self._repr_kwargs)
+        new_cls = self.__class__(**self.fields)
         new_cls.__dict__ = self.__dict__.copy()
 
         if strict is not None:
@@ -490,7 +508,7 @@ class IsDataclass(DirtyEquals[Any]):
         Remark that if this method is called, then `other` is an instance of a dataclass, therefore we can call
         `dataclasses.asdict` to convert to a dict.
         """
-        return asdict(other) == IsDict(self._repr_kwargs).settings(strict=self.strict, partial=self.partial)
+        return asdict(other) == IsDict(self.fields).settings(strict=self.strict, partial=self.partial)
 
 
 class IsPartialDataclass(IsDataclass):

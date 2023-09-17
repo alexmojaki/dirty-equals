@@ -72,12 +72,6 @@ class IsDatetime(IsNumeric[datetime]):
         self.iso_string = iso_string
         self.format_string = format_string
         self.enforce_tz = enforce_tz
-        self._repr_kwargs.update(
-            unix_number=unix_number,
-            iso_string=iso_string,
-            format_string=format_string,
-            enforce_tz=enforce_tz,
-        )
 
     def prepare(self, other: Any) -> datetime:
         if isinstance(other, datetime):
@@ -176,8 +170,6 @@ class IsNow(IsDatetime):
             format_string=format_string,
             enforce_tz=enforce_tz,
         )
-        if tz is not None:
-            self._repr_kwargs['tz'] = tz
 
     def _get_now(self) -> datetime:
         if self.tz is None:
@@ -249,10 +241,6 @@ class IsDate(IsNumeric[date]):
 
         self.iso_string = iso_string
         self.format_string = format_string
-        self._repr_kwargs.update(
-            iso_string=iso_string,
-            format_string=format_string,
-        )
 
     def prepare(self, other: Any) -> date:
         if type(other) is date:

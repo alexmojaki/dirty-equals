@@ -1,6 +1,6 @@
 from typing import Any, Dict, Tuple, TypeVar, Union, overload
 
-from ._base import DirtyEquals
+from ._base import ArgsAndKwargs, DirtyEquals
 from ._strings import IsStr
 from ._utils import get_dict_arg
 
@@ -45,7 +45,7 @@ class IsInstance(DirtyEquals[ExpectedType]):
         """
         self.expected_type = expected_type
         self.only_direct_instance = only_direct_instance
-        super().__init__(expected_type, only_direct_instance=only_direct_instance)
+        super().__init__()
 
     def __class_getitem__(cls, expected_type: ExpectedType) -> 'IsInstance[ExpectedType]':
         return cls(expected_type)
@@ -91,7 +91,7 @@ class HasName(DirtyEquals[T]):
         """
         self.expected_name = expected_name
         self.allow_instances = allow_instances
-        super().__init__(expected_name, allow_instances=allow_instances)
+        super().__init__()
 
     def __class_getitem__(cls, expected_name: str) -> 'HasName[T]':
         return cls(expected_name)
@@ -137,7 +137,7 @@ class HasRepr(DirtyEquals[T]):
         ```
         """
         self.expected_repr = expected_repr
-        super().__init__(expected_repr)
+        super().__init__()
 
     def __class_getitem__(cls, expected_repr: str) -> 'HasRepr[T]':
         return cls(expected_repr)
@@ -186,7 +186,10 @@ class HasAttributes(DirtyEquals[Any]):
         ```
         """
         self.expected_attrs = get_dict_arg('HasAttributes', expected_args, expected_kwargs)
-        super().__init__(**self.expected_attrs)
+        super().__init__()
+
+    def _repr_args_kwargs(self) -> ArgsAndKwargs:
+        return (), self.expected_attrs
 
     def equals(self, other: Any) -> bool:
         for attr, expected_value in self.expected_attrs.items():

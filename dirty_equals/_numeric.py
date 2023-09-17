@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any, Optional, Tuple, Type, TypeVar, Union
 
-from ._base import DirtyEquals
+from ._base import ArgsAndKwargs, DirtyEquals
 
 __all__ = (
     'IsApprox',
@@ -90,15 +90,7 @@ class IsNumeric(DirtyEquals[N]):
         self.ge: Optional[N] = ge
         self.le: Optional[N] = le
         self.has_bounds_checks = not all(f is None for f in (exactly, approx, delta, gt, lt, ge, le))
-        super().__init__(
-            exactly=exactly,
-            approx=approx,
-            delta=delta,
-            gt=gt,
-            lt=lt,
-            ge=ge,
-            le=le,
-        )
+        super().__init__()
 
     def prepare(self, other: Any) -> N:
         if other is True or other is False:
@@ -181,6 +173,9 @@ class IsApprox(IsNumber):
         """
         super().__init__(approx=approx, delta=delta)
 
+    def _repr_args_kwargs(self) -> ArgsAndKwargs:
+        return [], dict(approx=self.approx, delta=self.delta)
+
 
 class IsPositive(IsNumber):
     """
@@ -202,7 +197,6 @@ class IsPositive(IsNumber):
 
     def __init__(self) -> None:
         super().__init__(gt=0)
-        self._repr_kwargs = {}
 
 
 class IsNegative(IsNumber):
@@ -225,7 +219,6 @@ class IsNegative(IsNumber):
 
     def __init__(self) -> None:
         super().__init__(lt=0)
-        self._repr_kwargs = {}
 
 
 class IsNonNegative(IsNumber):
@@ -249,7 +242,6 @@ class IsNonNegative(IsNumber):
 
     def __init__(self) -> None:
         super().__init__(ge=0)
-        self._repr_kwargs = {}
 
 
 class IsNonPositive(IsNumber):
@@ -274,7 +266,6 @@ class IsNonPositive(IsNumber):
 
     def __init__(self) -> None:
         super().__init__(le=0)
-        self._repr_kwargs = {}
 
 
 class IsInt(IsNumeric[int]):
@@ -322,7 +313,6 @@ class IsPositiveInt(IsInt):
 
     def __init__(self) -> None:
         super().__init__(gt=0)
-        self._repr_kwargs = {}
 
 
 class IsNegativeInt(IsInt):
@@ -344,7 +334,6 @@ class IsNegativeInt(IsInt):
 
     def __init__(self) -> None:
         super().__init__(lt=0)
-        self._repr_kwargs = {}
 
 
 class IsFloat(IsNumeric[float]):
@@ -388,7 +377,6 @@ class IsPositiveFloat(IsFloat):
 
     def __init__(self) -> None:
         super().__init__(gt=0)
-        self._repr_kwargs = {}
 
 
 class IsNegativeFloat(IsFloat):
@@ -410,7 +398,6 @@ class IsNegativeFloat(IsFloat):
 
     def __init__(self) -> None:
         super().__init__(lt=0)
-        self._repr_kwargs = {}
 
 
 class IsFloatInf(IsFloat):
@@ -451,7 +438,6 @@ class IsFloatInfPos(IsFloatInf):
 
     def __init__(self) -> None:
         super().__init__(gt=0)
-        self._repr_kwargs = {}
 
     def equals(self, other: Any) -> bool:
         return self.bounds_checks(other) and super().equals(other)
@@ -475,7 +461,6 @@ class IsFloatInfNeg(IsFloatInf):
 
     def __init__(self) -> None:
         super().__init__(lt=0)
-        self._repr_kwargs = {}
 
     def equals(self, other: Any) -> bool:
         return self.bounds_checks(other) and super().equals(other)
